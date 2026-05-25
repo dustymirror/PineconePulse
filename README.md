@@ -50,7 +50,7 @@
    ```python
    ["Pinecone Pulse", "contrib.pinecone_pulse.PineconePulse"],
 
-   ## Controls & Operation
+  ## Controls & Operation
 
 | Control         | Function (Normal Mode)                                      | Function (Settings Mode – long‑press B1)         |
 |----------------|-------------------------------------------------------------|--------------------------------------------------|
@@ -146,4 +146,7 @@ The module uses the classic Fibonacci numbers:
 - **Evolving melodic sequence** – use CV1 to trigger an envelope that advances a pitch sequencer; the irregular module lengths create ever‑changing phrase lengths.  
 - **Ping‑pong modulation** – use CV4 (reverse‑track triggers) with ADSR to modulate filter cut‑off or VCA, creating a mirrored effect of the main rhythm.
 
-Happy Pulsing 🐚 🐚 🐚 ⏱️ 🐚 ⏱️ ⏱️  🐚 ⏱️ ⏱️ ⏱️ ⏱️  🐚 ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ 🐚 
+---
+
+## Happy Pulsing
+ 🐚 🐚 🐚 ⏱️ 🐚 ⏱️ ⏱️  🐚 ⏱️ ⏱️ ⏱️ ⏱️  🐚 ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ 🐚 ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ 🐚 ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ ⏱️ 
