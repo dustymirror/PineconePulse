@@ -1,5 +1,6 @@
-# Pinecone Pulse v0.38
-# AIN 控制 MAX 值（优化版 - 只在值变化时更新序列）
+# Pinecone Pulse v0.44
+# Fibonacci rhythm generator for EuroPi
+# 表情使用 :^ 和 ;<
 
 from europi import *
 from europi_script import EuroPiScript
@@ -45,8 +46,8 @@ class PineconePulse(EuroPiScript):
         
         # AIN 平滑滤波
         self.ain_filtered = 0.0
-        self.ain_last_max = -1      # 上次 AIN 控制的 MAX 值
-        self.ain_active = False     # AIN 是否有有效信号
+        self.ain_last_max = -1
+        self.ain_active = False
         
         # 计数器
         self.cv3_counter = 0
@@ -76,6 +77,10 @@ class PineconePulse(EuroPiScript):
         self.last_k1_raw = 0.0
         self.last_k2_raw = 0.0
 
+        # 表情滞留计数器
+        self.show_start = 0
+        self.show_end = 0
+
         self.update_sequences()
 
         @din.handler
@@ -88,7 +93,7 @@ class PineconePulse(EuroPiScript):
     def show_splash(self):
         oled.fill(0)
         oled.text(">^< Pinecone", 0, 8)
-        oled.text("v0.38 D.Mirror", 0, 20)
+        oled.text("v0.44 D.Mirror", 0, 20)
         oled.show()
         sleep_ms(1500)
 
@@ -102,23 +107,16 @@ class PineconePulse(EuroPiScript):
                 return ain.value() / 65535 * 5.0
 
     def update_ain(self):
-        """读取 AIN，返回是否需要更新序列"""
         ain_voltage = self.get_ain_voltage()
-        
-        # 检测 AIN 是否有有效信号
         self.ain_active = ain_voltage > 0.1
         
         if not self.ain_active:
             return False
         
-        # 平滑滤波
         self.ain_filtered = self.ain_filtered * (1 - AIN_SMOOTH) + ain_voltage * AIN_SMOOTH
-        
-        # 映射到 0-10 索引
         max_idx = int((self.ain_filtered / 5.0) * 10)
         max_idx = max(0, min(10, max_idx))
         
-        # 只有变化时才更新
         if max_idx != self.ain_last_max and max_idx >= self.min_idx:
             self.ain_last_max = max_idx
             self.max_idx = max_idx
@@ -129,13 +127,11 @@ class PineconePulse(EuroPiScript):
     def update_sequences(self):
         self.min_idx = max(0, min(10, self.k1_min))
         
-        # 如果 AIN 激活，MAX 由 AIN 控制；否则由 K2 控制
         if self.ain_active:
-            # MAX 已经在 update_ain() 中设置
             pass
         else:
             self.max_idx = max(0, min(10, self.k2_max))
-            self.ain_last_max = -1  # 重置 AIN 缓存
+            self.ain_last_max = -1
         
         if self.min_idx <= self.max_idx:
             self.normal_seq = FIB_VALUES[self.min_idx:self.max_idx+1]
@@ -159,7 +155,6 @@ class PineconePulse(EuroPiScript):
         self.round_dir = 1
         self.reset_request = False
         
-        # 重置计数器（序列改变时重置）
         self.cv3_counter = 0
         self.cv5_counter = 0
         self.cv6_counter = 0
@@ -201,36 +196,51 @@ class PineconePulse(EuroPiScript):
 
             self.update_display_cache()
             
-            # CV1 - 模块第一拍
+            # MIN 模块第一拍 -> 显示 :^
+            if self.normal_counter == 0 and self.normal_seq[self.normal_idx] == FIB_VALUES[self.min_idx]:
+                self.show_start = 5
+            
+            # MAX 模块最后一拍 -> 显示 ;<
+            is_last_beat = (self.normal_counter + 1) == self.normal_seq[self.normal_idx]
+            is_max_module = (self.normal_seq[self.normal_idx] == FIB_VALUES[self.max_idx])
+            if is_last_beat and is_max_module:
+                self.show_end = 5
+            
+            if self.show_start > 0:
+                self.show_start -= 1
+            if self.show_end > 0:
+                self.show_end -= 1
+            
+            # CV1
             if self.normal_counter == 0:
                 self.fire(cv1)
             
-            # CV4 - 逆行模块第一拍
+            # CV4
             if self.reverse_counter == 0:
                 self.fire(cv4)
             
-            # CV2 - 每拍
+            # CV2
             self.fire(cv2)
             
-            # CV3 - 每2拍
+            # CV3
             self.cv3_counter += 1
             if self.cv3_counter >= 2:
                 self.fire(cv3)
                 self.cv3_counter = 0
             
-            # CV5 - 每3拍
+            # CV5
             self.cv5_counter += 1
             if self.cv5_counter >= 3:
                 self.fire(cv5)
                 self.cv5_counter = 0
             
-            # CV6 - 每5拍
+            # CV6
             self.cv6_counter += 1
             if self.cv6_counter >= 5:
                 self.fire(cv6)
                 self.cv6_counter = 0
 
-            # 更新正常序列计数器
+            # 更新正常序列
             self.normal_counter += 1
             if self.normal_counter >= self.normal_seq[self.normal_idx]:
                 self.normal_counter = 0
@@ -246,7 +256,7 @@ class PineconePulse(EuroPiScript):
                     self.round_dir = 1
                     self.reset_request = False
 
-            # 更新逆行序列计数器
+            # 更新逆行序列
             self.reverse_counter += 1
             if self.reverse_counter >= self.reverse_seq[self.reverse_idx]:
                 self.reverse_counter = 0
@@ -283,15 +293,21 @@ class PineconePulse(EuroPiScript):
 
     def update_display(self):
         oled.fill(0)
+        
+        # 第1行
         min_str = FIB_STR[self.min_idx]
         max_str = FIB_STR[self.max_idx]
         max_display = max_str + ("*" if self.ain_active else "")
         oled.text("MIN:{} MAX:{}".format(min_str, max_display), 0, 0)
+        
+        # 第2行
         cv1_beat = self.display_normal_counter + 1
         cv1_total = self.display_normal_val
         cv4_beat = self.display_reverse_counter + 1
         cv4_total = self.display_reverse_val
         oled.text("1 {}/{} 4 {}/{}".format(cv1_beat, cv1_total, cv4_beat, cv4_total), 0, 12)
+        
+        # 第3行
         if self.settings_mode:
             prefix = "@"
         else:
@@ -308,6 +324,13 @@ class PineconePulse(EuroPiScript):
             bpm_text = "{}{}:---BPM".format(prefix, src)
         mode_text = "LOOP" if self.mode_loop else "RND"
         oled.text("{} {}".format(bpm_text, mode_text), 0, 24)
+        
+        # ========== 表情符号 ==========
+        if self.show_start > 0:
+            oled.text(":^", 110, 0)       # 右上角
+        if self.show_end > 0:
+            oled.text(";<", 110, 24)      # 右下角
+        
         oled.show()
 
     def check_buttons(self):
@@ -377,13 +400,11 @@ class PineconePulse(EuroPiScript):
                 if new_min != self.k1_min:
                     self.k1_min = new_min
                     need_update = True
-            # K2 只在 AIN 无信号时使用
             if k2_changed and not self.ain_active:
                 new_max = int(k2_raw * 10)
                 if new_max != self.k2_max:
                     self.k2_max = new_max
                     need_update = True
-            
             if need_update:
                 self.update_sequences()
 
@@ -391,7 +412,6 @@ class PineconePulse(EuroPiScript):
         self.should_exit = False
         self.show_splash()
         
-        # 初始化
         self.ain_filtered = self.get_ain_voltage()
         self.ain_last_max = -1
         self.k1_min = int(k1.percent() * 10)
@@ -405,10 +425,8 @@ class PineconePulse(EuroPiScript):
         
         while not self.should_exit:
             try:
-                # 更新旋钮
                 self.update_knobs()
                 
-                # 更新 AIN（仅在值变化时触发序列更新）
                 if self.update_ain():
                     self.update_sequences()
                 
