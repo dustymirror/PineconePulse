@@ -1,7 +1,7 @@
 **Fibonacci Rhythm Generator for EuroPi**  
 *Version 0.30 – DustyMirror2026*
 
-![Version](https://img.shields.io/badge/version-0.30-blue)
+![Version](https://img.shields.io/badge/version-0.35-blue)
 ![EuroPi](https://img.shields.io/badge/EuroPi-compatible-green)
 
 
@@ -31,7 +31,7 @@
 
 - [EuroPi](https://github.com/Allen-Synthesis/EuroPi) (Raspberry Pi Pico based)  
 - 6 × trigger outputs (5V gates, 5ms pulse width)  
-- 2 × analog inputs (K1, K2 – on‑board potentiometers)  
+- 3 × analog inputs (K1, K2 – on‑board potentiometers, Ain)  
 - 2 × buttons (B1, B2)  
 - 1 × clock input (DIN)  
 - 128×32 OLED display  
@@ -64,6 +64,49 @@
 > 💡 **Tip:** In Settings Mode the display shows a `@` symbol before the BPM to indicate you are editing.
 
 ---
+
+## External Input Interface Specifications
+
+### Analog Input (AIN)
+
+| Function | Description | Voltage Range | Mapping Range | Smoothing |
+|----------|-------------|---------------|---------------|-----------|
+| **MAX Value Control** | Dynamically control the maximum value of the Fibonacci sequence via external CV | 0 - 5V | 0 - 10 indices (01,1,2,3,5,8,13,21,34,55,89) | 1st order low-pass filter (coefficient 0.2) |
+
+**Usage Notes:**
+- When AIN has signal (>0.1V), MAX value is controlled by CV, display shows `MAX:21*` (with `*` indicator)
+- When AIN has no signal (<0.1V), MAX value is controlled by K2 knob manually
+- Sequence updates automatically when CV changes; update triggered only when change exceeds 1 index (prevents frequent rebuilds)
+
+**Typical Applications:**
+| CV Source | Effect |
+|-----------|--------|
+| LFO Sine Wave | Periodic MAX value changes, rhythm length sweeps back and forth |
+| Envelope Follower | Rhythm complexity changes with sound intensity |
+| Sequencer CV | Different song sections correspond to different MAX values, structured rhythmic evolution |
+| Manual CV (Slider/Knob) | Real-time manual control of rhythm range |
+
+---
+
+### Digital Input (DIN) - External Clock
+
+| Function | Description | Logic Level | BPM Detection | Display Format |
+|----------|-------------|-------------|----------------|-----------------|
+| **External Clock Sync** | Receive external clock pulses to drive rhythm generation | 5V trigger | Moving average (4 pulses) | `EX:120BPM` |
+
+**Usage Notes:**
+- When internal clock is off, DIN external clock is used automatically
+- BPM is detected and displayed in real-time with 4-pulse moving average
+- Display value is scaled to 1/4 (matches other modules' 16th note convention)
+- When no clock signal present, displays `EX:---BPM`
+
+### Interface Priority Summary
+
+| Input | Priority | Can Be Overridden By |
+|-------|----------|---------------------|
+| **AIN** | High (auto-overrides K2 when signal present) | K2 only when no signal |
+| **DIN** | Low (used when internal clock off) | Internal clock when active |
+
 
 ## Display Layout
 <img width="278" height="370" alt="sc" src="https://github.com/user-attachments/assets/ac7c8b21-16d6-4e70-8b67-38bdedd24fb5" />
