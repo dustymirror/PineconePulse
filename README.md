@@ -71,7 +71,7 @@
 
 | Function | Description | Voltage Range | Mapping Range | Smoothing |
 |----------|-------------|---------------|---------------|-----------|
-| **MAX Value Control** | Dynamically control the maximum value of the Fibonacci sequence via external CV | 0 - 5V | 0 - 10 indices (01,1,2,3,5,8,13,21,34,55,89) | 1st order low-pass filter (coefficient 0.2) |
+| **MAX Value Control** | Dynamically control the maximum value of the Fibonacci sequence via external CV | 0 - 10V | 0 - 10 indices (01,1,2,3,5,8,13,21,34,55,89) | 1st order low-pass filter (coefficient 0.2) |
 
 **Usage Notes:**
 - When AIN has signal (>0.1V), MAX value is controlled by CV, display shows `MAX:21*` (with `*` indicator)
